@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscountService", "Discount
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscountServiceClient", "..\DiscountServiceClient\DiscountServiceClient.csproj", "{A0DA8B66-DB06-4674-8477-A2079EBDF9EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscountService.Tests", "..\DiscountServiceTests\DiscountService.Tests.csproj", "{AA1DD62E-E2EE-482C-B774-22B71AD9983C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storage", "..\BusinessLayer\Storage.csproj", "{1CFE5399-2D7E-4876-BD67-9AE6C0F47DC3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{A0DA8B66-DB06-4674-8477-A2079EBDF9EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0DA8B66-DB06-4674-8477-A2079EBDF9EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0DA8B66-DB06-4674-8477-A2079EBDF9EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA1DD62E-E2EE-482C-B774-22B71AD9983C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA1DD62E-E2EE-482C-B774-22B71AD9983C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA1DD62E-E2EE-482C-B774-22B71AD9983C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA1DD62E-E2EE-482C-B774-22B71AD9983C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CFE5399-2D7E-4876-BD67-9AE6C0F47DC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CFE5399-2D7E-4876-BD67-9AE6C0F47DC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CFE5399-2D7E-4876-BD67-9AE6C0F47DC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CFE5399-2D7E-4876-BD67-9AE6C0F47DC3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
