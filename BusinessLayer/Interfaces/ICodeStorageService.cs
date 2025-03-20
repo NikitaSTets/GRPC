@@ -2,7 +2,9 @@
 
 public interface ICodeStorageService
 {
-    public void SaveCodes(HashSet<string> codes);
+    public void AddCodes(HashSet<string> codes);
+
+    public void RemoveCode(string code);
 
     public HashSet<string> LoadCodes();
 }

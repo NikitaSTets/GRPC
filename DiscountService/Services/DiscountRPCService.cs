@@ -1,13 +1,14 @@
 using DiscountService.Interfaces;
 using Grpc.Core;
 using Storage.Interfaces;
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
 
 namespace DiscountService.Services;
 
 public class DiscountRPCService : DiscountRPC.DiscountRPCBase
 {
-    private readonly object _lock = new();
-    private readonly HashSet<string> _discountCodes;
+    private readonly ConcurrentDictionary<string, bool> _discountCodes;
     private readonly ICodeValidationService _codeValidationService;
     private readonly ICodeStorageService _codeStorageService;
 
@@ -16,80 +17,66 @@ public class DiscountRPCService : DiscountRPC.DiscountRPCBase
         _codeValidationService = codeValidationService;
         _codeStorageService = codeStorageService;
 
-        _discountCodes = codeStorageService.LoadCodes();
+        _discountCodes = new ConcurrentDictionary<string, bool>(
+            codeStorageService.LoadCodes().Select(code => new KeyValuePair<string, bool>(code, true))
+        );
     }
 
     public override Task<GenerateCodesResponse> GenerateCodes(GenerateCodesRequest request, ServerCallContext context)
     {
-        var isCodeLengthValid = _codeValidationService.ValidateCodeLength(request.Length);
-
         if (request.Count == 0)
-        {
             return Task.FromResult(new GenerateCodesResponse { Result = true });
-        }
 
-        if (request.Count > 2000 || !isCodeLengthValid)
+        if (request.Count > 2000 || !_codeValidationService.ValidateCodeLength(request.Length))
             return Task.FromResult(new GenerateCodesResponse { Result = false });
 
-        var newCodes = new HashSet<string>();
-        lock (_lock)
+        var newCodes = new ConcurrentBag<string>();
+
+        Parallel.For(0, request.Count, (i, state) =>
         {
-            while (newCodes.Count < request.Count)
+            if (context.CancellationToken.IsCancellationRequested)
+                state.Stop();
+
+            string code;
+            do
             {
-                context.CancellationToken.ThrowIfCancellationRequested();
-                var code = GenerateRandomCode(request.Length);
+                code = GenerateRandomCode(request.Length);
+            } while (!_discountCodes.TryAdd(code, true));
 
-                if (_discountCodes.Add(code)) 
-                {
-                    newCodes.Add(code);
-                }
-            }
+            newCodes.Add(code);
+        });
 
-            _codeStorageService.SaveCodes(_discountCodes);
-        }
-        var response = new GenerateCodesResponse { Result = true };
+        _codeStorageService.AddCodes(newCodes.ToHashSet());
 
-        return Task.FromResult(response);
+        return Task.FromResult(new GenerateCodesResponse { Result = true });
     }
-
 
     public override Task<UseCodeResponse> UseCode(UseCodeRequest request, ServerCallContext context)
     {
         context.CancellationToken.ThrowIfCancellationRequested();
 
-        var isCodeValid = _codeValidationService.ValidateCode(request.Code);
+        if (!_codeValidationService.ValidateCode(request.Code))
+            return Task.FromResult(new UseCodeResponse { Result = UseCodeResultCode.Invalid });
 
-        if (!isCodeValid)
-            return Task.FromResult(new UseCodeResponse()
-            {
-                Result = UseCodeResultCode.Invalid
-            });
-
-        lock (_lock)
+        if (_discountCodes.TryRemove(request.Code, out _))
         {
-            if (_discountCodes.Contains(request.Code))
-            {
-                _discountCodes.Remove(request.Code);
-                _codeStorageService.SaveCodes(_discountCodes);
-
-                return Task.FromResult(new UseCodeResponse()
-                {
-                    Result = UseCodeResultCode.Success
-                });
-            }
-
-            return Task.FromResult(new UseCodeResponse()
-            {
-                Result = UseCodeResultCode.NotFound
-            });
+            _codeStorageService.RemoveCode(request.Code);
+            return Task.FromResult(new UseCodeResponse { Result = UseCodeResultCode.Success });
         }
+
+        return Task.FromResult(new UseCodeResponse { Result = UseCodeResultCode.NotFound });
     }
 
     private static string GenerateRandomCode(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => chars[random.Next(chars.Length)]).ToArray());
+        var buffer = new byte[length];
+
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(buffer);
+        }
+
+        return new string(buffer.Select(b => chars[b % chars.Length]).ToArray());
     }
 }

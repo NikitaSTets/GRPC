@@ -31,7 +31,7 @@ public class DiscountServiceTests
         var request = new GenerateCodesRequest { Count = count, Length = length };
         var response = await _service.GenerateCodes(request, _context);
 
-        _codeStorageService.Received(1).SaveCodes(Arg.Is<HashSet<string>>(codes => codes != null && codes.Count == (int)count && codes.All(code => code.Length == length)));
+        _codeStorageService.Received(1).AddCodes(Arg.Is<HashSet<string>>(codes => codes != null && codes.Count == (int)count && codes.All(code => code.Length == length)));
 
         Assert.That(response.Result, Is.True);
     }
